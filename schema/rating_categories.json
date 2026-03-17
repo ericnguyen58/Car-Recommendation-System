@@ -1,0 +1,130 @@
+{
+  "description": "Categorizes all review rating columns by source, type, and dimension. Joins to review_summary.csv and review_ratings.csv via review_id.",
+  "sources": {
+    "consumer": {
+      "description": "Crowd-sourced ratings submitted by verified owners and buyers.",
+      "columns": {
+        "aggregate": {
+          "description": "Top-level consumer sentiment metrics.",
+          "columns": {
+            "consumer_overall_rating": {
+              "dtype": "float",
+              "range": [1.0, 5.0],
+              "description": "Mean star rating across all consumer reviews"
+            },
+            "consumer_review_count": {
+              "dtype": "int",
+              "description": "Total number of consumer reviews submitted"
+            },
+            "consumer_recommend_pct": {
+              "dtype": "float",
+              "unit": "percent",
+              "range": [0.0, 100.0],
+              "description": "Percentage of reviewers who recommend the vehicle"
+            }
+          }
+        },
+        "dimensions": {
+          "description": "Granular sub-ratings scored 1–5 by consumers across key ownership aspects.",
+          "columns": {
+            "rating_value": {
+              "dtype": "float",
+              "range": [1.0, 5.0],
+              "aspect": "ownership",
+              "description": "Perceived value for money"
+            },
+            "rating_performance": {
+              "dtype": "float",
+              "range": [1.0, 5.0],
+              "aspect": "driving",
+              "description": "Engine power, acceleration, and handling"
+            },
+            "rating_quality": {
+              "dtype": "float",
+              "range": [1.0, 5.0],
+              "aspect": "build",
+              "description": "Materials, fit-and-finish, build quality"
+            },
+            "rating_comfort": {
+              "dtype": "float",
+              "range": [1.0, 5.0],
+              "aspect": "interior",
+              "description": "Ride quality, seating, and cabin noise"
+            },
+            "rating_reliability": {
+              "dtype": "float",
+              "range": [1.0, 5.0],
+              "aspect": "ownership",
+              "description": "Long-term dependability and fault frequency"
+            },
+            "rating_styling": {
+              "dtype": "float",
+              "range": [1.0, 5.0],
+              "aspect": "design",
+              "description": "Interior and exterior aesthetic appeal"
+            }
+          }
+        },
+        "distribution": {
+          "description": "Star-rating breakdown as percentages. NOTE: <1% populated in current dataset — treat as unpopulated.",
+          "populated": false,
+          "columns": {
+            "star_5_pct": {"dtype": "float", "unit": "percent", "range": [0.0, 100.0]},
+            "star_4_pct": {"dtype": "float", "unit": "percent", "range": [0.0, 100.0]},
+            "star_3_pct": {"dtype": "float", "unit": "percent", "range": [0.0, 100.0]},
+            "star_2_pct": {"dtype": "float", "unit": "percent", "range": [0.0, 100.0]},
+            "star_1_pct": {"dtype": "float", "unit": "percent", "range": [0.0, 100.0]}
+          }
+        }
+      }
+    },
+    "expert": {
+      "description": "Editorial assessments by automotive journalists.",
+      "columns": {
+        "aggregate": {
+          "description": "Overall expert verdict on the model-year.",
+          "columns": {
+            "expert_rating": {
+              "dtype": "float",
+              "range": [1.0, 5.0],
+              "description": "Composite editorial score"
+            },
+            "expert_ranking": {
+              "dtype": "int",
+              "description": "Category rank among peers (1 = best); parsed from text like '#3 in Best Midsize SUVs'"
+            }
+          }
+        }
+      }
+    }
+  },
+  "unpopulated_columns": {
+    "pros":  "Expert-listed pros — 0% populated in current dataset",
+    "cons":  "Expert-listed cons — 0% populated in current dataset",
+    "star_5_pct": "0% populated",
+    "star_4_pct": "0.1% populated",
+    "star_3_pct": "0.1% populated",
+    "star_2_pct": "0.4% populated",
+    "star_1_pct": "0.6% populated"
+  },
+  "dimension_aspects": {
+    "ownership": ["rating_value", "rating_reliability"],
+    "driving":   ["rating_performance"],
+    "build":     ["rating_quality"],
+    "interior":  ["rating_comfort"],
+    "design":    ["rating_styling"]
+  },
+  "flat_lookup": {
+    "consumer_overall_rating":  {"source": "consumer", "type": "aggregate"},
+    "consumer_review_count":    {"source": "consumer", "type": "aggregate"},
+    "consumer_recommend_pct":   {"source": "consumer", "type": "aggregate"},
+    "rating_value":             {"source": "consumer", "type": "dimension", "aspect": "ownership"},
+    "rating_performance":       {"source": "consumer", "type": "dimension", "aspect": "driving"},
+    "rating_quality":           {"source": "consumer", "type": "dimension", "aspect": "build"},
+    "rating_comfort":           {"source": "consumer", "type": "dimension", "aspect": "interior"},
+    "rating_reliability":       {"source": "consumer", "type": "dimension", "aspect": "ownership"},
+    "rating_styling":           {"source": "consumer", "type": "dimension", "aspect": "design"},
+    "expert_rating":            {"source": "expert",   "type": "aggregate"},
+    "expert_ranking":           {"source": "expert",   "type": "aggregate"}
+  }
+}

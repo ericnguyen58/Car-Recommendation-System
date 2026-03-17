@@ -1,0 +1,113 @@
+{
+  "description": "Categorizes each vehicle feature column by tier (standard/luxury) and functional group. Values are ordinal: 0=unavailable, 1=optional, 2=standard.",
+  "tiers": {
+    "standard": {
+      "description": "Features commonly present in entry-to-mid trim levels. Widely standard (>75% of equipped vehicles have them as standard).",
+      "safety": [
+        "Child Seat Anchors",
+        "Child Door Locks",
+        "Traction Control",
+        "Stability Control",
+        "Hill Start Assist"
+      ],
+      "connectivity": [
+        "Bluetooth Wireless Technology",
+        "Hands Free Phone",
+        "Bluetooth Streaming Audio",
+        "Satellite Radio",
+        "Smartphone Interface"
+      ],
+      "comfort_convenience": [
+        "Cruise Control",
+        "Remote Keyless Entry",
+        "Power Windows",
+        "Power Outlet",
+        "Rear Window Defroster",
+        "Steering Wheel Controls",
+        "Tilt Steering Wheel",
+        "Tilt/Telescoping Steering Wheel",
+        "Cup Holder Count",
+        "Folding Rear Seat",
+        "Power Driver's Seat",
+        "Heated Mirrors",
+        "Alarm System"
+      ],
+      "exterior": [
+        "Alloy Wheels",
+        "Fog Lights"
+      ]
+    },
+    "luxury": {
+      "description": "Features typically reserved for higher trim levels or optional packages. Often standard only in premium/luxury vehicles.",
+      "safety_advanced": [
+        "Blind-Spot Alert",
+        "Collision Warning System"
+      ],
+      "connectivity_tech": [
+        "Navigation System",
+        "Voice Recognition System",
+        "Internet Access",
+        "Real-Time Traffic Information",
+        "Premium Radio",
+        "Remote Engine Start"
+      ],
+      "interior_premium": [
+        "Leather Seats",
+        "Leather-Wrapped Steering Wheel",
+        "Dual Power Front Seats",
+        "Remote Control Liftgate/Trunk Release",
+        "Power Folding Exterior Mirrors",
+        "Rain Sensing Windshield Wipers"
+      ],
+      "exterior_sport": [
+        "Rear Spoiler"
+      ],
+      "drivetrain_advanced": [
+        "Dual-Clutch Automatic Transmission"
+      ]
+    }
+  },
+  "flat_lookup": {
+    "Child Seat Anchors":                 {"tier": "standard", "group": "safety"},
+    "Child Door Locks":                   {"tier": "standard", "group": "safety"},
+    "Traction Control":                   {"tier": "standard", "group": "safety"},
+    "Stability Control":                  {"tier": "standard", "group": "safety"},
+    "Hill Start Assist":                  {"tier": "standard", "group": "safety"},
+    "Bluetooth Wireless Technology":      {"tier": "standard", "group": "connectivity"},
+    "Hands Free Phone":                   {"tier": "standard", "group": "connectivity"},
+    "Bluetooth Streaming Audio":          {"tier": "standard", "group": "connectivity"},
+    "Satellite Radio":                    {"tier": "standard", "group": "connectivity"},
+    "Smartphone Interface":               {"tier": "standard", "group": "connectivity"},
+    "Cruise Control":                     {"tier": "standard", "group": "comfort_convenience"},
+    "Remote Keyless Entry":               {"tier": "standard", "group": "comfort_convenience"},
+    "Power Windows":                      {"tier": "standard", "group": "comfort_convenience"},
+    "Power Outlet":                       {"tier": "standard", "group": "comfort_convenience"},
+    "Rear Window Defroster":              {"tier": "standard", "group": "comfort_convenience"},
+    "Steering Wheel Controls":            {"tier": "standard", "group": "comfort_convenience"},
+    "Tilt Steering Wheel":                {"tier": "standard", "group": "comfort_convenience"},
+    "Tilt/Telescoping Steering Wheel":    {"tier": "standard", "group": "comfort_convenience"},
+    "Cup Holder Count":                   {"tier": "standard", "group": "comfort_convenience"},
+    "Folding Rear Seat":                  {"tier": "standard", "group": "comfort_convenience"},
+    "Power Driver's Seat":                {"tier": "standard", "group": "comfort_convenience"},
+    "Heated Mirrors":                     {"tier": "standard", "group": "comfort_convenience"},
+    "Alarm System":                       {"tier": "standard", "group": "comfort_convenience"},
+    "Alloy Wheels":                       {"tier": "standard", "group": "exterior"},
+    "Fog Lights":                         {"tier": "standard", "group": "exterior"},
+    "Blind-Spot Alert":                   {"tier": "luxury",   "group": "safety_advanced"},
+    "Collision Warning System":           {"tier": "luxury",   "group": "safety_advanced"},
+    "Navigation System":                  {"tier": "luxury",   "group": "connectivity_tech"},
+    "Voice Recognition System":           {"tier": "luxury",   "group": "connectivity_tech"},
+    "Internet Access":                    {"tier": "luxury",   "group": "connectivity_tech"},
+    "Real-Time Traffic Information":      {"tier": "luxury",   "group": "connectivity_tech"},
+    "Premium Radio":                      {"tier": "luxury",   "group": "connectivity_tech"},
+    "Remote Engine Start":                {"tier": "luxury",   "group": "connectivity_tech"},
+    "Leather Seats":                      {"tier": "luxury",   "group": "interior_premium"},
+    "Leather-Wrapped Steering Wheel":     {"tier": "luxury",   "group": "interior_premium"},
+    "Dual Power Front Seats":             {"tier": "luxury",   "group": "interior_premium"},
+    "Remote Control Liftgate/Trunk Release": {"tier": "luxury", "group": "interior_premium"},
+    "Power Folding Exterior Mirrors":     {"tier": "luxury",   "group": "interior_premium"},
+    "Rain Sensing Windshield Wipers":     {"tier": "luxury",   "group": "interior_premium"},
+    "Rear Spoiler":                       {"tier": "luxury",   "group": "exterior_sport"},
+    "Dual-Clutch Automatic Transmission": {"tier": "luxury",   "group": "drivetrain_advanced"}
+  }
+}

@@ -1,0 +1,22 @@
+[project]
+name = "car-specs"
+version = "0.1.0"
+description = "Car specifications CSV pipeline and analytics"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=3.0.1",
+    "scikit-learn>=1.8.0",
+    "xgboost>=3.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "jupyter",
+    "ipykernel",
+    "matplotlib",
+    "seaborn",
+]
+
+[project.scripts]
+car-specs = "main:main"

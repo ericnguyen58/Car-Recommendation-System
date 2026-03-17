@@ -1,0 +1,670 @@
+{
+  "files": {
+    "all_cars.csv": {
+      "description": "Vehicle specifications and features per trim level",
+      "columns": {
+        "car_id": {
+          "dtype": "string",
+          "role": "primary_key",
+          "nullable": false,
+          "max_length": 10,
+          "format": "{MAKE3}{YY}{MODEL3}{SEQ2}",
+          "components": {
+            "MAKE3":   "First 3 uppercase alphanumeric chars of brand (e.g. Ford→FOR, Mercedes-Benz→MER)",
+            "YY":      "Last 2 digits of model year, zero-padded (e.g. 2001→01, 2022→22)",
+            "MODEL≤3": "First 1-3 uppercase alphanumeric chars of model (e.g. F-150→F15, S5→S5, 911→911)",
+            "SEQ2":    "2-digit counter (01-99) within each MAKE3+YY+MODEL group, preserving row order"
+          },
+          "examples": ["FOR01F1501", "MER21GLC03", "AUD22S501", "TOY23TAC03"],
+          "description": "Compact unique vehicle identifier; 8-10 characters"
+        },
+        "make": {
+          "dtype": "string",
+          "role": "identifier",
+          "nullable": false,
+          "description": "Manufacturer brand name"
+        },
+        "model": {
+          "dtype": "string",
+          "role": "identifier",
+          "nullable": false,
+          "description": "Vehicle model name"
+        },
+        "year": {
+          "dtype": "int",
+          "role": "identifier",
+          "nullable": false,
+          "description": "Model year"
+        },
+        "bodytype": {
+          "dtype": "category",
+          "role": "feature",
+          "nullable": true,
+          "description": "Body style of the vehicle"
+        },
+        "trim": {
+          "dtype": "string",
+          "role": "identifier",
+          "nullable": true,
+          "description": "Specific trim / configuration name"
+        },
+        "price": {
+          "dtype": "float",
+          "role": "target_candidate",
+          "unit": "USD",
+          "nullable": true,
+          "description": "Base MSRP price in US dollars"
+        },
+        "mpg_city": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "mpg",
+          "nullable": true,
+          "description": "City fuel economy in miles per gallon"
+        },
+        "mpg_hwy": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "mpg",
+          "nullable": true,
+          "description": "Highway fuel economy in miles per gallon"
+        },
+        "mpg_comb": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "mpg",
+          "nullable": true,
+          "description": "Combined fuel economy in miles per gallon"
+        },
+        "Fuel Type": {
+          "dtype": "category",
+          "role": "feature",
+          "nullable": true,
+          "allowed_values": ["Gas", "Diesel", "Electric", "Hybrid", "Flexible Fuel", "Natural Gas"],
+          "recode": {
+            "ElectricLeafIcon": "Electric",
+            "HybridLeafIcon": "Hybrid"
+          },
+          "description": "Primary fuel type; icon-encoded values are remapped to plain labels"
+        },
+        "hp": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "horsepower",
+          "nullable": true,
+          "description": "Peak engine horsepower"
+        },
+        "Engine": {
+          "dtype": "string",
+          "role": "metadata",
+          "nullable": true,
+          "description": "Free-text engine description (e.g. 'V6, 4.2 Liter')"
+        },
+        "torque_lbft": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "lb-ft",
+          "nullable": true,
+          "description": "Peak engine torque in pound-feet"
+        },
+        "cargo_cuft": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "cubic_feet",
+          "nullable": true,
+          "description": "Cargo volume in cubic feet"
+        },
+        "0 - 60": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "seconds",
+          "nullable": true,
+          "raw_unit": "seconds suffix string",
+          "parse": "strip ' seconds', map 'N/A'/'Not Available'/'Not available' to NaN",
+          "description": "0-60 mph acceleration time in seconds"
+        },
+        "curb_weight_lbs": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "lbs",
+          "nullable": true,
+          "description": "Vehicle curb weight in pounds"
+        },
+        "Drivetrain": {
+          "dtype": "category",
+          "role": "feature",
+          "nullable": true,
+          "allowed_values": ["FWD", "RWD", "AWD", "4WD", "2WD"],
+          "description": "Drivetrain configuration"
+        },
+        "Transmission Type": {
+          "dtype": "category",
+          "role": "feature",
+          "nullable": true,
+          "allowed_values": ["Automatic", "Manual"],
+          "na_values": ["Not Available"],
+          "description": "Transmission type; 'Not Available' mapped to NaN"
+        },
+        "Recommended Fuel": {
+          "dtype": "category",
+          "role": "feature",
+          "nullable": true,
+          "allowed_values": ["Regular", "Premium", "Diesel", "E85", "CNG"],
+          "na_values": ["Not Available"],
+          "description": "Recommended fuel grade; 'Not Available' mapped to NaN"
+        },
+        "Fuel Capacity": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "gallons",
+          "nullable": true,
+          "raw_unit": "gallons suffix string",
+          "parse": "strip ' gallons', map 'Not Available' to NaN",
+          "description": "Fuel tank capacity in gallons"
+        },
+        "Wheel Base": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "inches",
+          "nullable": true,
+          "raw_unit": "inches suffix string",
+          "parse": "strip ' inches', map 'Not Available' to NaN",
+          "description": "Wheelbase in inches"
+        },
+        "Overall Length": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "inches",
+          "nullable": true,
+          "raw_unit": "inches suffix string",
+          "parse": "strip ' inches', map 'Not Available' to NaN",
+          "description": "Overall vehicle length in inches"
+        },
+        "Front Head Room": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "inches",
+          "nullable": true,
+          "raw_unit": "inches suffix string",
+          "parse": "strip ' inches', map 'Not Available' to NaN",
+          "description": "Front row head room in inches"
+        },
+        "Front Leg Room": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "inches",
+          "nullable": true,
+          "raw_unit": "inches suffix string",
+          "parse": "strip ' inches', map 'Not Available' to NaN",
+          "description": "Front row leg room in inches"
+        },
+        "Front Shoulder Room": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "inches",
+          "nullable": true,
+          "raw_unit": "inches suffix string",
+          "parse": "strip ' inches', map 'Not Available' to NaN",
+          "description": "Front row shoulder room in inches"
+        },
+        "Width with mirrors": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "inches",
+          "nullable": true,
+          "raw_unit": "inches suffix string",
+          "parse": "strip ' inches', map 'Not Available' to NaN",
+          "description": "Overall width including mirrors in inches"
+        },
+        "Turning Diameter": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "feet",
+          "nullable": true,
+          "raw_unit": "feet suffix string",
+          "parse": "strip ' feet', map 'Not Available' to NaN",
+          "description": "Curb-to-curb turning diameter in feet"
+        },
+        "Blind-Spot Alert": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Blind-spot alert availability (0=unavailable, 1=optional, 2=standard)"
+        },
+        "Collision Warning System": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Forward collision warning availability"
+        },
+        "Child Seat Anchors": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Not Required": 0, "Optional": 1, "Standard": 2},
+          "description": "LATCH child seat anchor availability"
+        },
+        "Child Door Locks": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Not Required": 0, "Optional": 1, "Standard": 2},
+          "description": "Child safety door lock availability"
+        },
+        "Traction Control": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Traction control availability"
+        },
+        "Bluetooth Wireless Technology": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Bluetooth availability"
+        },
+        "Cruise Control": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Cruise control availability"
+        },
+        "Remote Keyless Entry": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Remote keyless entry availability"
+        },
+        "Remote Engine Start": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Remote engine start availability"
+        },
+        "Smartphone Interface": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Smartphone integration (Apple CarPlay / Android Auto) availability"
+        },
+        "Internet Access": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "In-car internet access availability"
+        },
+        "Navigation System": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Built-in navigation system availability"
+        },
+        "Voice Recognition System": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Voice recognition availability"
+        },
+        "Real-Time Traffic Information": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Real-time traffic info availability"
+        },
+        "Hands Free Phone": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Hands-free phone availability"
+        },
+        "Premium Radio": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Premium audio system availability"
+        },
+        "Bluetooth Streaming Audio": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Bluetooth audio streaming availability"
+        },
+        "Satellite Radio": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Satellite radio availability"
+        },
+        "Remote Control Liftgate/Trunk Release": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Power liftgate / trunk release availability"
+        },
+        "Heated Mirrors": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Heated exterior mirrors availability"
+        },
+        "Leather Seats": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Leather seating availability"
+        },
+        "Folding Rear Seat": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Folding rear seat availability"
+        },
+        "Dual Power Front Seats": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Dual power-adjustable front seats availability"
+        },
+        "Power Driver's Seat": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Power driver's seat availability"
+        },
+        "Leather-Wrapped Steering Wheel": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Leather-wrapped steering wheel availability"
+        },
+        "Power Outlet": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Interior power outlet availability"
+        },
+        "Power Windows": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Power windows availability"
+        },
+        "Rear Window Defroster": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Rear window defroster availability"
+        },
+        "Steering Wheel Controls": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Steering wheel-mounted controls availability"
+        },
+        "Tilt Steering Wheel": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Tilt steering wheel availability"
+        },
+        "Tilt/Telescoping Steering Wheel": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Tilt and telescoping steering wheel availability"
+        },
+        "Cup Holder Count": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Cup holder presence indicator (availability flag; actual count not provided)"
+        },
+        "Alloy Wheels": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Alloy wheel availability"
+        },
+        "Fog Lights": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Fog light availability"
+        },
+        "Power Folding Exterior Mirrors": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Power-folding exterior mirror availability"
+        },
+        "Rear Spoiler": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Rear spoiler availability"
+        },
+        "Rain Sensing Windshield Wipers": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Rain-sensing wiper availability"
+        },
+        "Alarm System": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Security alarm system availability"
+        },
+        "Dual-Clutch Automatic Transmission": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Dual-clutch transmission availability"
+        },
+        "Hill Start Assist": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Hill start assist availability"
+        },
+        "Stability Control": {
+          "dtype": "ordinal_int",
+          "role": "feature",
+          "nullable": true,
+          "encoding": {"Not Available": 0, "Optional": 1, "Standard": 2},
+          "description": "Electronic stability control availability"
+        }
+      }
+    },
+    "all_reviews.csv": {
+      "description": "Consumer and expert ratings per make/model/year",
+      "columns": {
+        "make": {
+          "dtype": "string",
+          "role": "identifier",
+          "nullable": false,
+          "description": "Manufacturer brand name"
+        },
+        "model": {
+          "dtype": "string",
+          "role": "identifier",
+          "nullable": false,
+          "description": "Vehicle model name"
+        },
+        "year": {
+          "dtype": "int",
+          "role": "identifier",
+          "nullable": false,
+          "description": "Model year"
+        },
+        "consumer_overall_rating": {
+          "dtype": "float",
+          "role": "target_candidate",
+          "range": [1.0, 5.0],
+          "nullable": true,
+          "description": "Aggregate consumer rating (1–5 stars)"
+        },
+        "consumer_review_count": {
+          "dtype": "int",
+          "role": "feature",
+          "nullable": true,
+          "description": "Total number of consumer reviews submitted"
+        },
+        "consumer_recommend_pct": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "percent",
+          "range": [0.0, 100.0],
+          "nullable": true,
+          "description": "Percentage of reviewers who recommend the vehicle"
+        },
+        "star_5_pct": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "percent",
+          "range": [0.0, 100.0],
+          "nullable": true,
+          "description": "Percentage of 5-star ratings"
+        },
+        "star_4_pct": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "percent",
+          "range": [0.0, 100.0],
+          "nullable": true,
+          "description": "Percentage of 4-star ratings"
+        },
+        "star_3_pct": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "percent",
+          "range": [0.0, 100.0],
+          "nullable": true,
+          "description": "Percentage of 3-star ratings"
+        },
+        "star_2_pct": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "percent",
+          "range": [0.0, 100.0],
+          "nullable": true,
+          "description": "Percentage of 2-star ratings"
+        },
+        "star_1_pct": {
+          "dtype": "float",
+          "role": "feature",
+          "unit": "percent",
+          "range": [0.0, 100.0],
+          "nullable": true,
+          "description": "Percentage of 1-star ratings"
+        },
+        "rating_value": {
+          "dtype": "float",
+          "role": "feature",
+          "range": [1.0, 5.0],
+          "nullable": true,
+          "description": "Consumer sub-rating: value for money"
+        },
+        "rating_performance": {
+          "dtype": "float",
+          "role": "feature",
+          "range": [1.0, 5.0],
+          "nullable": true,
+          "description": "Consumer sub-rating: performance"
+        },
+        "rating_quality": {
+          "dtype": "float",
+          "role": "feature",
+          "range": [1.0, 5.0],
+          "nullable": true,
+          "description": "Consumer sub-rating: build quality"
+        },
+        "rating_comfort": {
+          "dtype": "float",
+          "role": "feature",
+          "range": [1.0, 5.0],
+          "nullable": true,
+          "description": "Consumer sub-rating: comfort"
+        },
+        "rating_reliability": {
+          "dtype": "float",
+          "role": "feature",
+          "range": [1.0, 5.0],
+          "nullable": true,
+          "description": "Consumer sub-rating: reliability"
+        },
+        "rating_styling": {
+          "dtype": "float",
+          "role": "feature",
+          "range": [1.0, 5.0],
+          "nullable": true,
+          "description": "Consumer sub-rating: styling"
+        },
+        "expert_rating": {
+          "dtype": "float",
+          "role": "target_candidate",
+          "nullable": true,
+          "description": "Editorial expert overall score"
+        },
+        "expert_ranking": {
+          "dtype": "int",
+          "role": "feature",
+          "nullable": true,
+          "raw_format": "string like '#N in <category> for <year>'",
+          "parse": "extract leading integer N from the '#N' prefix",
+          "description": "Expert category rank (lower is better); extracted from ranking string"
+        },
+        "pros": {
+          "dtype": "string",
+          "role": "metadata",
+          "nullable": true,
+          "description": "Expert-listed pros (currently unpopulated)"
+        },
+        "cons": {
+          "dtype": "string",
+          "role": "metadata",
+          "nullable": true,
+          "description": "Expert-listed cons (currently unpopulated)"
+        }
+      }
+    }
+  }
+}
