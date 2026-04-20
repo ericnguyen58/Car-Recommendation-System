@@ -1,12 +1,12 @@
 """
 split_cars.py
 -------------
-Splits all_cars_clean.csv into two focused datasets.
+Splits all_cars_clean.UVCRS into two focused datasets.
 
-  Input:   data/processed/all_cars_clean.csv
-           data/processed/all_reviews_clean.csv   (for review_id FK lookup)
-  Output:  data/final/cars/car_stats.csv
-           data/final/cars/car_features.csv
+  Input:   data/processed/all_cars_clean.UVCRS
+           data/processed/all_reviews_clean.UVCRS   (for review_id FK lookup)
+  Output:  data/final/cars/car_stats.UVCRS
+           data/final/cars/car_features.UVCRS
 
 car_id   – primary key (trim-level, unique per row)
 review_id – foreign key into review_summary / review_ratings (model-level)
@@ -108,20 +108,20 @@ def split(src: Path, reviews_src: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def main():
-    src          = PROCESSED / "all_cars_clean.csv"
-    reviews_src  = PROCESSED / "all_reviews_clean.csv"
+    src          = PROCESSED / "all_cars_clean.UVCRS"
+    reviews_src  = PROCESSED / "all_reviews_clean.UVCRS"
 
     print(f"Reading {src.name} …")
     stats, features = split(src, reviews_src)
 
-    out_stats    = OUT_DIR / "car_stats.csv"
-    out_features = OUT_DIR / "car_features.csv"
+    out_stats    = OUT_DIR / "car_stats.UVCRS"
+    out_features = OUT_DIR / "car_features.UVCRS"
 
     stats.to_csv(out_stats, index=False)
     features.to_csv(out_features, index=False)
 
-    print(f"  → car_stats.csv    {len(stats):,} rows × {len(stats.columns)} cols")
-    print(f"  → car_features.csv {len(features):,} rows × {len(features.columns)} cols")
+    print(f"  → car_stats.UVCRS    {len(stats):,} rows × {len(stats.columns)} cols")
+    print(f"  → car_features.UVCRS {len(features):,} rows × {len(features.columns)} cols")
 
     # ── feature tier summary ──────────────────────────────────────────────────
     cats_path = SCHEMA_DIR / "feature_categories.json"
@@ -137,7 +137,7 @@ def main():
         print(f"  {tier.upper():8s} ({len(members):2d} features): "
               + ", ".join(members[:5]) + (" …" if len(members) > 5 else ""))
 
-    print("\n── Null counts in car_features.csv ──")
+    print("\n── Null counts in car_features.UVCRS ──")
     nulls = features[feat_data_cols].isnull().sum()
     print(nulls[nulls > 0].to_string())
 

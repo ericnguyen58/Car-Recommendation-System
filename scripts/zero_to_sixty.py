@@ -40,7 +40,7 @@ Usage
 
 Output
 ------
-    data/final/cars/zero_to_sixty_est.csv   (22 columns, hp > 180 rows only)
+    data/final/cars/zero_to_sixty_est.UVCRS   (22 columns, hp > 180 rows only)
 """
 
 import re
@@ -53,9 +53,9 @@ from scipy.optimize import minimize_scalar
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 ROOT  = Path(__file__).parent.parent
-STATS = ROOT / "data/final/cars/car_stats.csv"
-FEATS = ROOT / "data/final/cars/car_features.csv"
-OUT   = ROOT / "data/final/cars/zero_to_sixty_est.csv"
+STATS = ROOT / "data/final/cars/car_stats.UVCRS"
+FEATS = ROOT / "data/final/cars/car_features.UVCRS"
+OUT   = ROOT / "data/final/cars/zero_to_sixty_est.UVCRS"
 
 # ── Physical constants ────────────────────────────────────────────────────────
 V_60MPH_MPS = 60.0 * 0.44704          # 26.8224 m/s

@@ -20,3 +20,7 @@ notebooks/.ipynb_checkpoints/
 data/raw/*.csv
 data/processed/*.csv
 data/final/**/*.csv
+
+# Environment variables / secrets
+.env
+.env.*

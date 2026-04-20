@@ -4,10 +4,10 @@ standardize.py
 Loads raw CSVs, applies type conversions and value standardizations
 defined in schema/schema.json, and writes cleaned outputs.
 
-  Input:   data/raw/all_cars.csv
-           data/raw/all_reviews.csv
-  Output:  data/processed/all_cars_clean.csv
-           data/processed/all_reviews_clean.csv
+  Input:   data/raw/all_cars.UVCRS
+           data/raw/all_reviews.UVCRS
+  Output:  data/processed/all_cars_clean.UVCRS
+           data/processed/all_reviews_clean.UVCRS
 """
 
 import re
@@ -253,7 +253,7 @@ def extract_body_and_doors(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# ── all_cars.csv ─────────────────────────────────────────────────────────────
+# ── all_cars.UVCRS ─────────────────────────────────────────────────────────────
 
 def standardize_cars(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path, low_memory=False)
@@ -290,12 +290,6 @@ def standardize_cars(path: Path) -> pd.DataFrame:
         )
 
     # ── measurement strings → float ──
-    inch_cols = [
-        "Fuel Capacity",   # gallons – handled separately below
-        "Wheel Base", "Overall Length",
-        "Front Head Room", "Front Leg Room", "Front Shoulder Room",
-        "Width with mirrors",
-    ]
     for col in [
         "Wheel Base", "Overall Length",
         "Front Head Room", "Front Leg Room", "Front Shoulder Room",
@@ -351,7 +345,7 @@ def standardize_cars(path: Path) -> pd.DataFrame:
     return df
 
 
-# ── all_reviews.csv ──────────────────────────────────────────────────────────
+# ── all_reviews.UVCRS ──────────────────────────────────────────────────────────
 
 def standardize_reviews(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path, low_memory=False)
@@ -387,18 +381,18 @@ def standardize_reviews(path: Path) -> pd.DataFrame:
 # ── main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    cars_path    = RAW_DIR / "all_cars (1).csv"
-    reviews_path = RAW_DIR / "all_reviews.csv"
+    cars_path    = RAW_DIR / "all_cars (1).UVCRS"
+    reviews_path = RAW_DIR / "all_reviews.UVCRS"
 
-    print("Loading and standardizing all_cars(1).csv …")
+    print("Loading and standardizing all_cars(1).UVCRS …")
     cars = standardize_cars(cars_path)
-    out_cars = OUT_DIR / "all_cars_clean.csv"
+    out_cars = OUT_DIR / "all_cars_clean.UVCRS"
     cars.to_csv(out_cars, index=False)
     print(f"  → saved {out_cars}  ({len(cars):,} rows × {len(cars.columns)} cols)")
 
-    print("Loading and standardizing all_reviews.csv …")
+    print("Loading and standardizing all_reviews.UVCRS …")
     reviews = standardize_reviews(reviews_path)
-    out_reviews = OUT_DIR / "all_reviews_clean.csv"
+    out_reviews = OUT_DIR / "all_reviews_clean.UVCRS"
     reviews.to_csv(out_reviews, index=False)
     print(f"  → saved {out_reviews}  ({len(reviews):,} rows × {len(reviews.columns)} cols)")
 

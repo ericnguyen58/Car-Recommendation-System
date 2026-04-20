@@ -1,11 +1,11 @@
 """
 split_reviews.py
 ----------------
-Adds a review_id to all_reviews_clean.csv and splits it into two datasets.
+Adds a review_id to all_reviews_clean.UVCRS and splits it into two datasets.
 
-  Input:   data/processed/all_reviews_clean.csv
-  Output:  data/final/reviews/review_summary.csv
-           data/final/reviews/review_ratings.csv
+  Input:   data/processed/all_reviews_clean.UVCRS
+  Output:  data/final/reviews/review_summary.UVCRS
+           data/final/reviews/review_ratings.UVCRS
 
 Both share review_id as the join key.
 Star-breakdown and pros/cons columns are excluded (<1% populated).
@@ -111,19 +111,19 @@ def split(src: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
 # ── main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    src = PROCESSED / "all_reviews_clean.csv"
+    src = PROCESSED / "all_reviews_clean.UVCRS"
 
     print(f"Reading {src.name} …")
     summary, ratings = split(src)
 
-    out_summary = OUT_DIR / "review_summary.csv"
-    out_ratings = OUT_DIR / "review_ratings.csv"
+    out_summary = OUT_DIR / "review_summary.UVCRS"
+    out_ratings = OUT_DIR / "review_ratings.UVCRS"
 
     summary.to_csv(out_summary, index=False)
     ratings.to_csv(out_ratings, index=False)
 
-    print(f"  → review_summary.csv  {len(summary):,} rows × {len(summary.columns)} cols")
-    print(f"  → review_ratings.csv  {len(ratings):,} rows × {len(ratings.columns)} cols")
+    print(f"  → review_summary.UVCRS  {len(summary):,} rows × {len(summary.columns)} cols")
+    print(f"  → review_ratings.UVCRS  {len(ratings):,} rows × {len(ratings.columns)} cols")
 
     # ── ID uniqueness check ──────────────────────────────────────────────────
     n_dupes = summary["review_id"].duplicated().sum()
