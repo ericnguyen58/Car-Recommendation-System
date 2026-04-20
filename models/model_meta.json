@@ -22,7 +22,7 @@
     "price",
     "mpg_city",
     "mpg_hwy",
-    "mpg_comb",
+    "mpg_comb",c
     "hp",
     "torque_lbft",
     "cargo_cuft",
