@@ -1,26 +1,76 @@
-# Python-generated files
+# Python
 __pycache__/
 *.py[oc]
+*.pyo
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
+.eggs/
 
 # Virtual environments
-.venv
+.venv/
+venv/
+env/
 
-# macOS
-.DS_Store
-
-# Jupyter
-notebooks/.ipynb_checkpoints/
-.ipynb_checkpoints/
-
-# Large data files (tracked via DVC or stored externally)
-data/raw/*.csv
-data/processed/*.csv
-data/final/**/*.csv
+# uv
+uv.lock
 
 # Environment variables / secrets
 .env
 .env.*
+.streamlit/secrets.toml
+
+# IDE / editors
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.name
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+*.ipynb
+
+# Data files
+data/
+*.csv
+*.tsv
+*.json
+*.parquet
+*.feather
+*.xlsx
+*.xls
+*.db
+*.sqlite
+*.sql
+
+# Model files
+models/
+*.joblib
+*.pkl
+*.pickle
+*.h5
+*.pt
+*.pth
+*.onnx
+
+# Logs
+logs/
+*.log
+
+# Claude / AI config
+.claude/
+
+# Misc
+*.tmp
+*.bak
+*.swp
+*~
