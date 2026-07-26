@@ -1,4 +1,4 @@
-# Ccreaear Recommendation System — Project Overview
+# Car Recommendation System — Project Overview
 
 A data pipeline and machine learning system built for first-time car buyers shopping the used market. Processes raw car specification data (2001–2024), enriches it with expert and consumer reviews, and produces a recommendation model that predicts buyer satisfaction from car specs. Includes an interactive web UI and CLI interface.
 
