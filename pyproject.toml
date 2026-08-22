@@ -1,13 +1,24 @@
 [project]
-name = "car-specs"
-version = "0.1.0"
-description = "Car specifications CSV pipeline and analytics"
+name = "car-recommender"
+version = "2.0.0"
+description = "Cloud-native car recommendation platform: FastAPI backend, Streamlit UI, ML pipeline, LLM advisor, AWS deployment"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "pandas>=3.0.1",
-    "scikit-learn>=1.8.0",
-    "xgboost>=3.2.0",
+    "pandas>=2.2.2",
+    "numpy>=1.26.4",
+    "scipy>=1.13.1",
+    "scikit-learn>=1.5.1",
+    "joblib>=1.4.2",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic-settings>=2.5.0",
+    "httpx>=0.27.0",
+    "anthropic>=0.86.0",
+    "streamlit>=1.35.0",
+    "python-dotenv>=1.0.0",
+    "boto3>=1.35.0",
+    "selenium>=4.15.0",
 ]
 
 [project.optional-dependencies]
@@ -16,7 +27,31 @@ dev = [
     "ipykernel",
     "matplotlib",
     "seaborn",
+    "shap",
+    "pytest>=8.0.0",
+    "pytest-mock>=3.14.0",
+    "moto[s3,secretsmanager]>=5.0.0",
+    "ruff>=0.7.0",
 ]
 
 [project.scripts]
-car-specs = "main:main"
+car-recommender-pipeline = "car_recommender.pipeline.runner:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/car_recommender"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+# B008: FastAPI's Depends(...)/Header(...) as a parameter default is the
+# framework's documented dependency-injection idiom, not a bug.
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

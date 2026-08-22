@@ -1,0 +1,49 @@
+name: Deploy to AWS
+
+# Inert until AWS is wired up: every job is gated on the AWS_ROLE_ARN repo
+# variable, which `terraform apply` in infra/ produces (see its
+# github_actions_role_arn output). Until that variable is set, this
+# workflow's jobs are skipped rather than failing — ci.yml's badge is
+# unaffected either way.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write   # required for OIDC — no long-lived AWS keys in this repo
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ vars.AWS_ROLE_ARN != '' }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure AWS credentials (OIDC — no stored keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-session-name: gha-deploy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ vars.AWS_ECR_REPOSITORY_URL }}:latest
+            ${{ vars.AWS_ECR_REPOSITORY_URL }}:${{ github.sha }}
+
+      - name: Trigger App Runner deployment
+        if: ${{ vars.AWS_APPRUNNER_SERVICE_ARN != '' }}
+        run: |
+          aws apprunner start-deployment \
+            --service-arn "${{ vars.AWS_APPRUNNER_SERVICE_ARN }}"
