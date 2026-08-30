@@ -13,9 +13,6 @@ wheels/
 venv/
 env/
 
-# uv
-uv.lock
-
 # Environment variables / secrets
 .env
 .env.*
@@ -68,6 +65,16 @@ logs/
 
 # Claude / AI config
 .claude/
+
+# Tooling caches
+.ruff_cache/
+.pytest_cache/
+
+# Terraform
+infra/.terraform/
+*.tfstate
+*.tfstate.*
+infra/*.tfvars
 
 # Misc
 *.tmp

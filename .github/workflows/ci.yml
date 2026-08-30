@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked --extra dev
+
+      - name: Lint (ruff)
+        run: uv run ruff check src tests frontend
+
+      - name: Test (pytest)
+        # Fixture-based only — no data/ dir, no models/*.joblib loaded, no
+        # ANTHROPIC_API_KEY, no AWS credentials. See tests/conftest.py.
+        run: uv run pytest tests/ -v
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build image (no push — this is a build-health gate, not a deploy)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          tags: car-recommender-api:ci

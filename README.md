@@ -1,6 +1,42 @@
-# Car Recommendation System — Project Overview
+# Car Recommender — Cloud-Native Car Recommendation Platform
 
-A data pipeline and machine learning system built for first-time car buyers shopping the used market. Processes raw car specification data (2001–2024), enriches it with expert and consumer reviews, and produces a recommendation model that predicts buyer satisfaction from car specs. Includes an interactive web UI and CLI interface.
+![CI](https://github.com/ericnguyen58/Car-Recommendation-System/actions/workflows/ci.yml/badge.svg)
+
+A data pipeline and machine learning platform built for first-time car buyers shopping the used market. Processes raw car specification data (2001–2024), enriches it with expert and consumer reviews, and serves a recommendation model through a FastAPI backend, a Streamlit UI, and an LLM-powered conversational advisor. Deploys to **AWS** (S3, ECR, App Runner, Secrets Manager) with a GitHub Actions CI/CD pipeline.
+
+---
+
+## Architecture
+
+```
+                         ┌────────────────────┐
+                         │   Streamlit UI      │  frontend/streamlit_app.py
+                         │  (thin HTTP client) │  — no model loading, no DataFrame
+                         └──────────┬──────────┘
+                                    │ HTTPS + X-API-Key
+                                    ▼
+                         ┌────────────────────┐
+                         │   FastAPI backend   │  src/car_recommender/api/
+                         │  GET  /cars/filters │
+                         │  GET  /cars/{id}    │
+                         │  POST /recommendations
+                         │  POST /advisor/chat │──────► Anthropic API (Claude)
+                         └──────────┬──────────┘
+                                    │
+                     MODEL_STORE_BACKEND=local | s3
+                                    │
+                    ┌───────────────┴───────────────┐
+                    ▼                                ▼
+         data/ + models/ (local disk)      s3://<bucket>/data, /models
+                                                       │
+                                            Secrets Manager (ANTHROPIC_API_KEY,
+                                            API_PASSWORD) — DEPLOY_ENV=aws
+
+  ML pipeline (offline, produces the artifacts the API serves):
+  src/car_recommender/pipeline/  →  python -m car_recommender.pipeline.runner
+```
+
+Locally, everything defaults to the filesystem (`MODEL_STORE_BACKEND=local`, `DEPLOY_ENV=local`) — no AWS account needed to develop or run the tests. In production the same code reads model/data artifacts from S3 and secrets from Secrets Manager, running on AWS App Runner behind an image pushed to ECR (see [AWS Deployment](#aws-deployment)).
 
 ---
 
@@ -23,53 +59,57 @@ Reviews are at the **make + model + year** level — one review applies to all t
 
 ## Pipeline
 
-10 stages run end-to-end via `python main.py`:
+10 stages run end-to-end via `python -m car_recommender.pipeline.runner`, plus one optional stage:
 
 ```
 raw CSVs
    │
-   ▼ standardize.py            Type cleanup, ordinal encoding, car_id assignment
+   ▼ standardize            Type cleanup, ordinal encoding, car_id assignment
    │
-   ▼ split_reviews.py          Separates review text from ratings, assigns review_id
+   ▼ split-reviews          Separates review text from ratings, assigns review_id
    │
-   ▼ split_cars.py             Splits specs from features, joins review_id FK
+   ▼ split-cars             Splits specs from features, joins review_id FK
    │
-   ▼ impute_hp_torque.py       Manual hp/torque lookup for 123 rare/luxury/EV models
-   │                           using published manufacturer specs (Bentley, Ferrari,
-   │                           McLaren, Lucid, Rivian, Polestar, etc.)
+   ▼ impute-hp-torque       Manual hp/torque lookup for 123 rare/luxury/EV models
+   │                        using published manufacturer specs (Bentley, Ferrari,
+   │                        McLaren, Lucid, Rivian, Polestar, etc.)
    │
-   ▼ ml_impute_hp_torque.py    ML-based imputation for remaining 3,334 hp / 3,490 torque nulls
-   │                           RF trained on real values; brand origin groups (American /
-   │                           European / Japanese / Korean) used as features.
-   │                           Predictions snapped to nearest known real value for same
-   │                           make+model+year where possible (26–28% of cases).
+   ▼ ml-impute-hp-torque    ML-based imputation for remaining 3,334 hp / 3,490 torque nulls
+   │                        RF trained on real values; brand origin groups (American /
+   │                        European / Japanese / Korean) used as features.
+   │                        Predictions snapped to nearest known real value for same
+   │                        make+model+year where possible (26–28% of cases).
    │
-   ▼ zero_to_sixty.py          Physics-based 0–60 mph estimator (hp > 180 cars only)
+   ▼ zero-to-sixty          Physics-based 0–60 mph estimator (hp > 180 cars only)
    │
-   ▼ build_consumer_view.py    Joins specs + features + expert ratings + consumer ratings
-   │                           into a single consumer-focused table (27,902 × 56 cols)
+   ▼ build-consumer-view    Joins specs + features + expert ratings + consumer ratings
+   │                        into a single consumer-focused table (27,902 × 56 cols)
    │
-   ▼ fill_consumer_view.py     Aggressive null filling via group median/mode cascades
-   │                           (make+model → make+bodytype → make → global)
+   ▼ fill-consumer-view     Aggressive null filling via group median/mode cascades
+   │                        (make+model → make+bodytype → make → global)
    │
-   ▼ export_final.py           Fills Pickup cargo = 0, drops ~2,318 unfillable rows
-   │                           Output: model_ready.csv — 25,584 rows, zero nulls
+   ▼ export-final           Fills Pickup cargo = 0, joins used_price.csv if present,
+   │                        drops ~2,318 unfillable rows
+   │                        Output: model_ready.csv — 25,584 rows, zero nulls
    │
-   ▼ train_recommender.py      Trains Random Forest, saves model artifacts
-                               Output: models/rf_recommender.joblib
+   ▼ train-recommender      Trains Random Forest, saves model artifacts
+                            Output: models/rf_recommender.joblib
+
+  scrape-used-price (optional, off by default — see Used-Market Price below)
 ```
 
 ```bash
-python main.py                           # full pipeline
-python main.py --only train-recommender  # single stage
-python main.py --skip zero-to-sixty      # skip a stage
+python -m car_recommender.pipeline.runner                            # full pipeline
+python -m car_recommender.pipeline.runner --only train-recommender   # single stage
+python -m car_recommender.pipeline.runner --skip zero-to-sixty       # skip a stage
+python -m car_recommender.pipeline.runner --only scrape-used-price   # optional, see below
 ```
 
 ---
 
 ## Dataset — model_ready.csv
 
-**25,584 rows × 56 columns, zero nulls in all model columns.**
+**25,584 rows × 56 columns, zero nulls in all model columns** (plus `used_price_est` / `used_price_missing` when the optional scrape stage has been run).
 
 | Group | Columns |
 |---|---|
@@ -78,12 +118,13 @@ python main.py --skip zero-to-sixty      # skip a stage
 | Performance | hp, torque_lbft |
 | Powertrain | Drivetrain, Transmission Type |
 | Practicality | cargo_cuft |
-| Flags | is_ev, luxury, hp_missing, torque_missing |
+| Flags | is_ev, luxury, hp_missing, torque_missing, used_price_missing |
 | Safety | Child Seat Anchors, Child Door Locks, Traction Control, Stability Control, Hill Start Assist, Blind-Spot Alert, Collision Warning System |
 | Connectivity | Bluetooth, Hands Free Phone, Satellite Radio, Smartphone Interface, Navigation System, Voice Recognition, Internet Access, Real-Time Traffic, Premium Radio |
 | Convenience | Cruise Control, Remote Keyless Entry, Remote Engine Start, Power Windows, Power Outlet, Rear Window Defroster, Steering Wheel Controls, Tilt Steering Wheel |
 | Expert ratings | rating_value, rating_performance, rating_quality, rating_comfort, rating_reliability, rating_styling |
 | Consumer ratings | consumer_overall_rating, consumer_review_count |
+| Used-market price (optional) | used_price_est, used_price_missing |
 
 Feature availability columns use ordinal encoding: `0` = Not Available, `1` = Optional, `2` = Standard.
 `hp_missing` / `torque_missing` = 1 if value was null in raw data before imputation (8.4% / 8.9% of rows).
@@ -106,7 +147,7 @@ Raw data had significant nulls in consumer-relevant columns. All imputation foll
 | Transmission, Drivetrain | Group mode cascade |
 | Remaining unfillable | ~2,318 phantom EPA regulatory rows dropped before modeling |
 
-**Intentionally left null:** Engine (free-text spec string), review_id for unreviewed cars.
+**Intentionally left null:** Engine (free-text spec string), review_id for unreviewed cars, used_price_est (unless the optional scrape stage has been run).
 
 ---
 
@@ -157,54 +198,148 @@ Raw data had significant nulls in consumer-relevant columns. All imputation foll
 
 ## Interfaces
 
-### Web UI
-```bash
-streamlit run app.py
-# Opens at http://localhost:8501
-```
-Sidebar filters: body type, make, fuel, drivetrain, transmission, price range, MPG, HP, year, predicted rating range, EV/luxury toggles.
-Results table with colour-coded predicted rating, actual consumer rating alongside.
-Car detail picker: full spec sheet, expert + consumer ratings, feature availability (Safety / Connectivity / Convenience), expandable extended specs.
-Imputed hp/torque flagged with `~` in the detail view.
+### FastAPI backend
 
-### CLI
 ```bash
-python scripts/recommend_cli.py
+uv run uvicorn car_recommender.api.main:app --reload
+# http://localhost:8000/docs for interactive OpenAPI docs
 ```
-Interactive prompt. Filters persist across queries. Type `help`, `options`, `show`, `clear`.
+
+| Endpoint | Description |
+|---|---|
+| `GET /health` | Liveness check |
+| `GET /cars/filters` | Distinct makes/bodytypes/fuel types/etc. + numeric bounds, for building filter UIs |
+| `GET /cars/{car_id}` | Full spec sheet: ratings, feature availability, extended specs |
+| `POST /recommendations` | Filtered, ranked, deduplicated-by-model search |
+| `POST /advisor/chat` | Conversational advisor — Claude + the `get_car_recommendations` tool, run server-side |
+
+All routes except `/health` require `X-API-Key: <API_PASSWORD>` when `API_PASSWORD` is set (open in local dev when it's unset). `/advisor/chat` is additionally rate-limited (30 requests/hour per client by default).
+
+### Streamlit UI (thin client)
+
+```bash
+uv run streamlit run frontend/streamlit_app.py
+# http://localhost:8501 — talks to the API above, no local model/data loading
+```
+
+Sidebar filters call `POST /recommendations`; the Advisor tab calls `POST /advisor/chat` and holds the (opaque, server-round-tripped) conversation history in `st.session_state`. Set `API_BASE_URL` (defaults to `http://localhost:8000`) and `API_KEY` (if the backend has `API_PASSWORD` set) via env var, `.env`, or `st.secrets`.
+
+### Conversational advisor (LLM)
+
+`POST /advisor/chat`, implemented in `src/car_recommender/llm/advisor.py`. The buyer describes what they want in plain language; Claude extracts structured filters, calls `get_car_recommendations` via tool use, and explains results in buyer-friendly terms.
+
+The model is a **config value, not hardcoded** — `ADVISOR_MODEL` (default: `claude-haiku-4-5`, the cheapest current model, for development). Upgrading the advisor to a stronger model is a one-line env var change, no code change:
+
+```bash
+export ADVISOR_MODEL=claude-opus-5   # or claude-sonnet-5, etc.
+```
+
+Requires `ANTHROPIC_API_KEY` (env var, `.env`, or — in production — AWS Secrets Manager; see below).
 
 ### Python
-```python
-from scripts.train_recommender import recommend
 
-results = recommend(
-    preferences={
-        'bodytype':     'SUV',
-        'max_price':    40000,
-        'min_mpg_comb': 25,
-        'min_year':     2020,
-        'Drivetrain':   'AWD',
-    },
+```python
+from car_recommender.ml.filters import apply_filters, get_recommendations
+from car_recommender.ml.model_store import ModelStore
+from car_recommender.core.config import get_settings
+
+store = ModelStore.load(get_settings())
+results = get_recommendations(
+    {"bodytype": "SUV", "max_price": 40000, "min_mpg_comb": 25, "min_year": 2020, "Drivetrain": "AWD"},
+    store.df,
     top_n=5,
-    unique_models=True,   # one result per make+model (default)
 )
 ```
 
-Supported filter keys: `bodytype`, `make`, `Fuel Type`, `Drivetrain`, `Transmission Type`, `is_ev`, `luxury`, `max_price`, `min_price`, `min_mpg_comb`, `max_mpg_comb`, `min_hp`, `max_hp`, `min_year`, `max_year`, `min_cargo_cuft`.
-
-### Conversational advisor (LLM interface)
-```bash
-python scripts/chat_recommender.py
-```
-Natural language interface powered by Claude claude-opus-4-6. The buyer describes what they want in plain language; Claude extracts structured filters, calls the recommendation engine via tool use, and explains results in buyer-friendly terms. Supports multi-turn conversation — follow-up questions like "show me only AWD options" or "what about something more fuel efficient?" adjust filters and re-query automatically.
-
-Requires an `ANTHROPIC_API_KEY` environment variable and `pip install anthropic`.
-
 ### Model evaluation (no retraining)
+
 ```bash
-python scripts/evaluate_model.py
+python -m car_recommender.pipeline.evaluate_model
 ```
 Loads saved `.joblib` and reports: overall metrics on all reviewed cars, year-era breakdown (pre/post 2015), per-bodytype RMSE, per-make RMSE (best/worst 10), bucket accuracy confusion matrix, prediction vs actual distribution, mean bias. Primary train/test metrics are stored in `models/model_meta.json`.
+
+---
+
+## Used-Market Price (optional)
+
+`price` in the dataset is new-car MSRP, not what a used buyer actually pays. `src/car_recommender/scraping/kbb.py` + `pipeline/used_price.py` scrape Kelley Blue Book for used-market price estimates, joined into `model_ready.csv` as `used_price_est` / `used_price_missing` when present.
+
+This stage is **off by default** and network/browser-dependent — it currently covers a small hand-picked sample of makes/models (see `CARS`/`YEARS` in `scraping/kbb.py`), not the full catalog. Expanding coverage is a deliberate follow-up given how slow, fragile, and rate-limit-sensitive live scraping is — run it yourself and iterate:
+
+```bash
+python -m car_recommender.pipeline.runner --only scrape-used-price
+python -m car_recommender.pipeline.runner --only export-final   # re-join the results
+```
+
+---
+
+## AWS Deployment
+
+Real AWS usage, not just a mention: **S3** for model/data artifacts, **ECR** for the API's container image, **App Runner** to run it, **Secrets Manager** for `ANTHROPIC_API_KEY`/`API_PASSWORD`, and **GitHub Actions OIDC** (no stored AWS keys) to deploy on every push to `main`.
+
+```
+src/car_recommender/ml/model_store.py    MODEL_STORE_BACKEND=s3 → downloads artifacts from S3
+src/car_recommender/core/secrets.py      DEPLOY_ENV=aws → fetches secrets from Secrets Manager
+infra/main.tf                            Terraform: S3 bucket, ECR repo, App Runner service,
+                                          Secrets Manager containers, GitHub OIDC role
+.github/workflows/deploy.yml             Builds/pushes the image, redeploys App Runner
+```
+
+**Setup** (apply with your own AWS account — this isn't run from a coding session):
+
+```bash
+cd infra
+terraform init
+terraform apply
+
+# populate the two secrets (never stored in .tf files or state)
+aws secretsmanager put-secret-value --secret-id car-recommender/anthropic-api-key --secret-string "sk-ant-..."
+aws secretsmanager put-secret-value --secret-id car-recommender/api-password      --secret-string "<a password>"
+
+# upload model/data artifacts once
+aws s3 cp models/rf_recommender.joblib s3://$(terraform output -raw artifacts_bucket)/models/rf_recommender.joblib
+aws s3 cp models/label_encoders.joblib s3://$(terraform output -raw artifacts_bucket)/models/label_encoders.joblib
+aws s3 cp models/feature_list.json     s3://$(terraform output -raw artifacts_bucket)/models/feature_list.json
+aws s3 cp data/final/model_ready.csv   s3://$(terraform output -raw artifacts_bucket)/data/model_ready.csv
+```
+
+Then set these as GitHub repo **variables** (Settings → Secrets and variables → Actions → Variables) to arm `deploy.yml` — until `AWS_ROLE_ARN` is set, that workflow no-ops rather than failing, so `ci.yml`'s badge is unaffected either way:
+
+| Variable | Value |
+|---|---|
+| `AWS_ROLE_ARN` | `terraform output -raw github_actions_role_arn` |
+| `AWS_ECR_REPOSITORY_URL` | `terraform output -raw ecr_repository_url` |
+| `AWS_APPRUNNER_SERVICE_ARN` | `terraform output -raw apprunner_service_arn` |
+| `AWS_REGION` | your region (default `us-east-1`) |
+
+---
+
+## Project Structure
+
+```
+├── src/car_recommender/
+│   ├── core/          # Settings, logging, AWS Secrets Manager loader, sanitization, shared paths
+│   ├── schemas/        # Pydantic request/response models
+│   ├── ml/              # ModelStore (local/S3), filter + ranking logic
+│   ├── llm/             # Advisor system prompt + tool-use loop, tool schema/validation
+│   ├── api/              # FastAPI app + routers (cars, recommendations, advisor)
+│   ├── pipeline/          # The 10-stage ETL/training pipeline + runner + evaluate_model + shap_explain
+│   └── scraping/           # Selenium driver + KBB scraper + used-price orchestration
+├── frontend/
+│   └── streamlit_app.py    # Thin HTTP client UI
+├── tests/                    # Fixture-based — no data/, no AWS, no ANTHROPIC_API_KEY required
+├── infra/
+│   └── main.tf                # Terraform: S3, ECR, App Runner, Secrets Manager, GitHub OIDC role
+├── .github/workflows/
+│   ├── ci.yml                   # Lint + test + docker build — drives the badge above
+│   └── deploy.yml                # OIDC deploy to AWS, gated on AWS_ROLE_ARN being set
+├── Dockerfile
+├── data/                            # raw/processed/final CSVs (not tracked in git)
+├── models/                            # Trained model artifacts (tracked in git)
+├── notebooks/                          # EDA notebooks
+├── reports/shap/                        # SHAP visualizations
+└── schema/                                # Column/category definitions
+```
 
 ---
 
@@ -220,65 +355,29 @@ Loads saved `.joblib` and reports: overall metrics on all reviewed cars, year-er
 
 **Two-stage split design.** The model is built for a fixed used-car catalog. A temporal split would penalise the model for not predicting the future, which is irrelevant here. A naive stratified random split would let the same make+model appear in both train and test, inflating Spearman to ~0.98 through memorization rather than genuine learning. The two-stage approach resolves both: a group-aware holdout (20% of make+model groups, never seen in training) serves as a lower-bound diagnostic at Spearman=0.54, while the stratified random primary split (same groups, different rows) gives the deployment-realistic metric at Spearman=0.98. Both numbers are reported and meaningful.
 
-**Imputation flags preserved.** `hp_missing` and `torque_missing` are kept in the dataset and surfaced in the UI, but excluded from model training — they reflect data collection gaps, not car quality.
+**Imputation flags preserved.** `hp_missing` and `torque_missing` are kept in the dataset and surfaced in the API/UI, but excluded from model training — they reflect data collection gaps, not car quality.
 
 **Pickup truck cargo.** `cargo_cuft` is structurally absent for traditional pickups. Filled with 0 rather than imputed — correctly reflects that cargo volume is not a relevant metric for that body type.
 
----
+**FastAPI as the single source of truth.** v1 loaded the model and ran filter logic independently inside the Streamlit app, the CLI, and the chat script — three copies of the same logic, three places for it to drift. v2 moves inference, filtering, and the LLM advisor into one FastAPI backend; the Streamlit UI is a thin HTTP client with no model-loading code, and the standalone CLIs were retired.
 
-## Project Structure
-
-```
-├── app.py                      # Streamlit web UI
-├── main.py                     # Pipeline runner (10 stages)
-├── data/
-│   ├── raw/                    # Source files (do not modify)
-│   ├── processed/              # Standardized intermediates
-│   └── final/
-│       ├── consumer_view.csv   # Full imputed dataset (27,902 × 56)
-│       ├── model_ready.csv     # Zero-null model input (25,584 × 56)
-│       ├── cars/               # car_stats.csv, car_features.csv, zero_to_sixty_est.csv
-│       └── reviews/            # review_summary.csv, review_ratings.csv
-├── models/
-│   ├── rf_recommender.joblib   # Trained Random Forest
-│   ├── label_encoders.joblib   # Categorical encoders
-│   ├── feature_list.json       # Feature column order
-│   └── model_meta.json         # RMSE, R², Spearman, training details
-├── notebooks/
-│   ├── car_specs_eda.ipynb     # Original specs EDA (5-pillar structure)
-│   └── consumer_eda.ipynb      # Consumer recommendation EDA
-├── scripts/
-│   ├── standardize.py          # Stage 1
-│   ├── split_reviews.py        # Stage 2
-│   ├── split_cars.py           # Stage 3
-│   ├── impute_hp_torque.py     # Stage 4 — manual patches
-│   ├── ml_impute_hp_torque.py  # Stage 5 — ML imputer
-│   ├── zero_to_sixty.py        # Stage 6
-│   ├── build_consumer_view.py  # Stage 7
-│   ├── fill_consumer_view.py   # Stage 8
-│   ├── export_final.py         # Stage 9
-│   ├── train_recommender.py    # Stage 10 + recommend() function
-│   ├── evaluate_model.py       # Standalone health check on all reviewed cars (no retraining)
-│   ├── compare_cutoffs.py      # Historical: compared temporal cutoff years during split design
-│   ├── recommend_cli.py        # Structured filter CLI (key=value syntax)
-│   └── chat_recommender.py     # Conversational CLI powered by Claude claude-opus-4-6 (LLM interface)
-└── schema/                     # Column definitions and category mappings
-```
+**Tests never touch real data.** `data/` is gitignored and not present in CI. Tests build a small synthetic catalog + a deterministic fake model (`tests/conftest.py`) and mock the Anthropic client and AWS (`moto`) — the CI badge reflects code correctness, not whether a real dataset happens to be checked out.
 
 ---
 
 ## Known Limitations
 
-- **Price is MSRP, not used market price** — the dataset contains new car list prices. A 2016 Civic at $10k used vs $22k new are different buying decisions. Price filters work as relative signals, not accurate used market values.
+- **Price is MSRP, not used market price** — the dataset contains new car list prices; `used_price_est` (optional, see [Used-Market Price](#used-market-price-optional)) currently covers a small sample, not the full catalog.
 - **Consumer ratings from a single source** — aggregated from one review site; skews toward enthusiast and dissatisfied buyers, not the full buyer population.
 - **Low-rated cars underrepresented** — consumer ratings are right-skewed (most cars 4.0+) due to selection bias: people tend to rate cars they bought. Low-bucket (<3.5) recall is structurally weaker than Mid/High/Top — a data problem, not a model problem.
 - **Mercedes-Benz consistently highest RMSE** — consumer ratings diverge from spec-based expectations more than any other make.
+- **Rate limiter is single-process, in-memory** — fine for one App Runner instance; a multi-instance deployment would want a shared store (e.g. Redis) instead.
 
 ---
 
 ## Next Steps
 
-- **Used market price integration** — replace MSRP with real used market prices (e.g. from KBB/Edmunds) so budget filters reflect what a used buyer actually pays; currently the highest-priority data gap
-- **LLM integration** — wrap `recommend()` with a conversational interface so first-time buyers can describe needs in plain language
+- **Full-catalog used-price scraping** — expand `scraping/kbb.py`'s coverage beyond the current sample
 - **Reliability weighting** — expose `rating_reliability` as a user-adjustable filter priority, given its outsized importance for used car buyers
 - **NDCG evaluation** — ranking metric against held-out user preference data for proper recommendation quality measurement
+- **Shared rate-limit store** — move off in-memory rate limiting for multi-instance deployments
